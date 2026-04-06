@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Karl Lynex — Admin Panel</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; }
+
+    #login-screen {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 100vh; padding: 20px;
+      background: radial-gradient(ellipse at top, #1a1a2e 0%, #0a0a0f 70%);
+    }
+    .login-box {
+      background: #12121a; border: 1px solid #2a2a3a; border-radius: 20px;
+      padding: 44px 30px; width: 100%; max-width: 380px; text-align: center;
+    }
+    .kl-logo {
+      width: 60px; height: 60px; margin: 0 auto 16px;
+      background: linear-gradient(135deg, #c9a84c, #a07830); border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 900; color: #000;
+    }
+    .logo-text { font-size: 20px; font-weight: 800; color: #c9a84c; letter-spacing: 3px; margin-bottom: 4px; }
+    .logo-sub { font-size: 11px; color: #444; margin-bottom: 32px; letter-spacing: 2px; }
+    .login-box input {
+      width: 100%; padding: 14px 16px; background: #1a1a2e; border: 1px solid #2a2a3a;
+      border-radius: 10px; color: #e0e0e0; font-size: 15px; margin-bottom: 12px;
+      outline: none; transition: border-color 0.2s;
+    }
+    .login-box input:focus { border-color: #c9a84c; }
+    .btn-gold {
+      width: 100%; padding: 14px; background: linear-gradient(135deg, #c9a84c, #a07830);
+      border: none; border-radius: 10px; color: #000; font-size: 15px;
+      font-weight: 700; cursor: pointer; letter-spacing: 1px;
+    }
+    .error-msg { color: #e05555; font-size: 13px; margin-top: 12px; display: none; }
+
+    #admin-panel { display: none; }
+    .topbar {
+      background: #12121a; border-bottom: 1px solid #2a2a3a; padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 10px; }
+    .topbar-title { font-size: 15px; font-weight: 700; color: #c9a84c; letter-spacing: 1px; }
+    .user-badge { background: #1a2a1a; color: #4caf50; font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+    .btn-logout {
+      padding: 8px 16px; background: transparent; border: 1px solid #3a3a4a;
+      border-radius: 8px; color: #888; font-size: 12px; cursor: pointer;
+    }
+    .btn-logout:hover { border-color: #e05555; color: #e05555; }
+
+    .tabs {
+      display: flex; background: #0e0e18; border-bottom: 1px solid #2a2a3a;
+      overflow-x: auto; scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      padding: 13px 16px; font-size: 12px; color: #555; cursor: pointer;
+      border-bottom: 2px solid transparent; white-space: nowrap; font-weight: 600;
+    }
+    .tab.active { color: #c9a84c; border-bottom-color: #c9a84c; }
+
+    .panel-content { padding: 20px; max-width: 680px; margin: 0 auto; }
+    .section { display: none; }
+    .section.active { display: block; }
+    .section-title { font-size: 17px; font-weight: 700; color: #c9a84c; margin-bottom: 4px; }
+    .section-desc { font-size: 12px; color: #555; margin-bottom: 18px; }
+
+    .form-card {
+      background: #12121a; border: 1px solid #2a2a3a;
+      border-radius: 14px; padding: 20px; margin-bottom: 20px;
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 11px; color: #666; margin-bottom: 6px; letter-spacing: 1px; text-transform: uppercase; }
+    .form-group input, .form-group textarea {
+      width: 100%; padding: 12px 14px; background: #0e0e18; border: 1px solid #2a2a3a;
+      border-radius: 10px; color: #e0e0e0; font-size: 14px; outline: none; font-family: inherit;
+    }
+    .form-group input:focus, .form-group textarea:focus { border-color: #c9a84c; }
+    .form-group textarea { resize: vertical; min-height: 90px; }
+
+    .btn-save {
+      padding: 11px 22px; background: linear-gradient(135deg, #c9a84c, #a07830);
+      border: none; border-radius: 10px; color: #000; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .save-status { display: inline-block; font-size: 12px; color: #4caf50; margin-left: 12px; opacity: 0; transition: opacity 0.3s; }
+    .save-status.show { opacity: 1; }
+
+    .card {
+      background: #12121a; border: 1px solid #2a2a3a; border-radius: 12px;
+      padding: 14px 16px; margin-bottom: 10px;
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+    }
+    .card-info { flex: 1; }
+    .card-title { font-size: 14px; font-weight: 600; color: #e0e0e0; margin-bottom: 2px; }
+    .card-desc { font-size: 12px; color: #555; }
+    .btn-delete {
+      padding: 6px 12px; background: transparent; border: 1px solid #3a2a2a;
+      border-radius: 7px; color: #885555; font-size: 12px; cursor: pointer; flex-shrink: 0;
+    }
+    .btn-delete:hover { border-color: #e05555; color: #e05555; }
+    .empty-state { text-align: center; color: #333; font-size: 13px; padding: 30px; border: 1px dashed #2a2a3a; border-radius: 12px; }
+    .loading { text-align: center; color: #444; font-size: 13px; padding: 20px; }
+
+    .role-tag { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 700; margin-left: 6px; }
+    .role-founder { background: #2a1a0a; color: #c9a84c; }
+    .role-admin { background: #0a2a1a; color: #4caf50; }
+    .role-dev { background: #0a1a2a; color: #5c9af5; }
+  </style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <div class="kl-logo">KL</div>
+    <div class="logo-text">KARL LYNEX</div>
+    <div class="logo-sub">ADMIN PANEL</div>
+    <input type="text" id="username-input" placeholder="Username" autocomplete="off"/>
+    <input type="password" id="password-input" placeholder="Password"/>
+    <button class="btn-gold" onclick="checkLogin()">LOGIN</button>
+    <div class="error-msg" id="error-msg">Wrong username or password.</div>
+  </div>
+</div>
+
+<div id="admin-panel">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">⚙ KL ADMIN</div>
+      <div class="user-badge" id="user-badge">● User</div>
+    </div>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('hero',this)">🏠 Hero</div>
+    <div class="tab" onclick="switchTab('about',this)">ℹ About</div>
+    <div class="tab" onclick="switchTab('apps',this)">📱 Apps</div>
+    <div class="tab" onclick="switchTab('team',this)">👥 Team</div>
+    <div class="tab" onclick="switchTab('announce',this)">📢 News</div>
+    <div class="tab" onclick="switchTab('admins',this)">🔐 Admins</div>
+  </div>
+
+  <div class="panel-content">
+
+    <!-- HERO -->
+    <div class="section active" id="section-hero">
+      <div class="section-title">Hero Section</div>
+      <div class="section-desc">Main banner of Karl Lynex website</div>
+      <div class="form-card">
+        <div class="form-group"><label>Main Title</label><input type="text" id="hero-title" placeholder="e.g. Karl Lynex"/></div>
+        <div class="form-group"><label>Subtitle / Tagline</label><input type="text" id="hero-subtitle" placeholder="e.g. OS Architecture & AI Intelligence"/></div>
+        <div class="form-group"><label>Button Text</label><input type="text" id="hero-btn" placeholder="e.g. Explore Our Work"/></div>
+        <button class="btn-save" onclick="saveSection('hero')">Save Changes</button>
+        <span class="save-status" id="status-hero">✓ Saved!</span>
+      </div>
+    </div>
+
+    <!-- ABOUT -->
+    <div class="section" id="section-about">
+      <div class="section-title">About Section</div>
+      <div class="section-desc">Description shown on website</div>
+      <div class="form-card">
+        <div class="form-group"><label>About Title</label><input type="text" id="about-title" placeholder="e.g. Who We Are"/></div>
+        <div class="form-group"><label>About Text</label><textarea id="about-text" placeholder="Write about Karl Lynex..."></textarea></div>
+        <div class="form-group"><label>Mission Statement</label><textarea id="about-mission" placeholder="Our mission is..."></textarea></div>
+        <button class="btn-save" onclick="saveSection('about')">Save Changes</button>
+        <span class="save-status" id="status-about">✓ Saved!</span>
+      </div>
+    </div>
+
+    <!-- APPS -->
+    <div class="section" id="section-apps">
+      <div class="section-title">Apps We Made</div>
+      <div class="section-desc">Add or remove apps</div>
+      <div class="form-card">
+        <div class="form-group"><label>App Name</label><input type="text" id="app-name" placeholder="e.g. Hill Surge"/></div>
+        <div class="form-group"><label>Description</label><textarea id="app-desc" placeholder="Short description..." style="min-height:70px"></textarea></div>
+        <div class="form-group"><label>App URL (optional)</label><input type="text" id="app-url" placeholder="https://..."/></div>
+        <button class="btn-save" onclick="addApp()">+ Add App</button>
+      </div>
+      <div id="apps-list"><div class="loading">Loading...</div></div>
+    </div>
+
+    <!-- TEAM -->
+    <div class="section" id="section-team">
+      <div class="section-title">Team Members</div>
+      <div class="section-desc">Manage team shown on website</div>
+      <div class="form-card">
+        <div class="form-group"><label>Full Name</label><input type="text" id="team-name" placeholder="e.g. Ahanaf Noho Odri"/></div>
+        <div class="form-group"><label>Role</label><input type="text" id="team-role" placeholder="e.g. CEO, Developer"/></div>
+        <button class="btn-save" onclick="addTeamMember()">+ Add Member</button>
+      </div>
+      <div id="team-list"><div class="loading">Loading...</div></div>
+    </div>
+
+    <!-- ANNOUNCEMENTS -->
+    <div class="section" id="section-announce">
+      <div class="section-title">Announcements</div>
+      <div class="section-desc">Post news and updates</div>
+      <div class="form-card">
+        <div class="form-group"><label>Title</label><input type="text" id="news-title" placeholder="e.g. New update coming soon"/></div>
+        <div class="form-group"><label>Message</label><textarea id="news-body" placeholder="Write your announcement..."></textarea></div>
+        <button class="btn-save" onclick="addNews()">+ Post</button>
+      </div>
+      <div id="news-list"><div class="loading">Loading...</div></div>
+    </div>
+
+    <!-- ADMINS -->
+    <div class="section" id="section-admins">
+      <div class="section-title">Admin Members</div>
+      <div class="section-desc">People who can access this panel</div>
+      <div class="card">
+        <div class="card-info">
+          <div class="card-title">Ahanaf Noho Odri <span class="role-tag role-founder">FOUNDER</span></div>
+          <div class="card-desc">Username: ahanaf &nbsp;|&nbsp; Full access</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-info">
+          <div class="card-title">Karl Admin <span class="role-tag role-admin">ADMIN</span></div>
+          <div class="card-desc">Username: karladmin &nbsp;|&nbsp; Content access</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-info">
+          <div class="card-title">Dev One <span class="role-tag role-dev">DEV</span></div>
+          <div class="card-desc">Username: dev1 &nbsp;|&nbsp; Apps & Team access</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc,
+           setDoc, getDoc, serverTimestamp, query, orderBy }
+    from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBJD72fLVvW-_dN3gOjVE0dY4s_5gPQBWE",
+    authDomain: "karl-lynex.firebaseapp.com",
+    projectId: "karl-lynex",
+    storageBucket: "karl-lynex.firebasestorage.app",
+    messagingSenderId: "622267094293",
+    appId: "1:622267094293:web:84308a79952790c0ef051c"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const db = getFirestore(fbApp);
+
+  const ADMINS = {
+    "ahanaf":    { password: "karllynex2024", name: "Ahanaf Noho Odri" },
+    "karladmin": { password: "kl@admin2024",  name: "Karl Admin" },
+    "dev1":      { password: "kldev#2024",     name: "Dev One" }
+  };
+
+  window.checkLogin = function() {
+    const u = document.getElementById('username-input').value.trim().toLowerCase();
+    const p = document.getElementById('password-input').value;
+    if (ADMINS[u] && ADMINS[u].password === p) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('admin-panel').style.display = 'block';
+      document.getElementById('user-badge').textContent = '● ' + ADMINS[u].name;
+      loadAll();
+    } else {
+      document.getElementById('error-msg').style.display = 'block';
+    }
+  }
+
+  window.logout = function() {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('admin-panel').style.display = 'none';
+    document.getElementById('username-input').value = '';
+    document.getElementById('password-input').value = '';
+  }
+
+  window.switchTab = function(tab, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('section-' + tab).classList.add('active');
+  }
+
+  function loadAll() { loadHero(); loadAbout(); loadApps(); loadTeam(); loadNews(); }
+
+  function showSaved(id) {
+    const el = document.getElementById('status-' + id);
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2500);
+  }
+
+  window.saveSection = async function(section) {
+    let data = {};
+    if (section === 'hero') {
+      data = {
+        title: document.getElementById('hero-title').value,
+        subtitle: document.getElementById('hero-subtitle').value,
+        btn: document.getElementById('hero-btn').value
+      };
+    } else if (section === 'about') {
+      data = {
+        title: document.getElementById('about-title').value,
+        text: document.getElementById('about-text').value,
+        mission: document.getElementById('about-mission').value
+      };
+    }
+    await setDoc(doc(db, 'site-content', section), data);
+    showSaved(section);
+  }
+
+  async function loadHero() {
+    const d = await getDoc(doc(db, 'site-content', 'hero'));
+    if (d.exists()) {
+      const data = d.data();
+      document.getElementById('hero-title').value = data.title || '';
+      document.getElementById('hero-subtitle').value = data.subtitle || '';
+      document.getElementById('hero-btn').value = data.btn || '';
+    }
+  }
+
+  async function loadAbout() {
+    const d = await getDoc(doc(db, 'site-content', 'about'));
+    if (d.exists()) {
+      const data = d.data();
+      document.getElementById('about-title').value = data.title || '';
+      document.getElementById('about-text').value = data.text || '';
+      document.getElementById('about-mission').value = data.mission || '';
+    }
+  }
+
+  window.addApp = async function() {
+    const name = document.getElementById('app-name').value.trim();
+    const desc = document.getElementById('app-desc').value.trim();
+    const url = document.getElementById('app-url').value.trim();
+    if (!name) return alert('App name required!');
+    await addDoc(collection(db, 'apps'), { name, desc, url, createdAt: serverTimestamp() });
+    document.getElementById('app-name').value = '';
+    document.getElementById('app-desc').value = '';
+    document.getElementById('app-url').value = '';
+    loadApps();
+  }
+
+  async function loadApps() {
+    const list = document.getElementById('apps-list');
+    list.innerHTML = '<div class="loading">Loading...</div>';
+    try {
+      const snap = await getDocs(query(collection(db, 'apps'), orderBy('createdAt', 'desc')));
+      if (snap.empty) { list.innerHTML = '<div class="empty-state">No apps yet</div>'; return; }
+      list.innerHTML = '';
+      snap.forEach(d => {
+        const data = d.data();
+        list.innerHTML += `<div class="card"><div class="card-info"><div class="card-title">${data.name}</div><div class="card-desc">${data.desc||'No description'}</div></div><button class="btn-delete" onclick="delItem('apps','${d.id}',loadApps)">Delete</button></div>`;
+      });
+    } catch(e) { list.innerHTML = '<div class="empty-state">Error loading</div>'; }
+  }
+
+  window.addTeamMember = async function() {
+    const name = document.getElementById('team-name').value.trim();
+    const role = document.getElementById('team-role').value.trim();
+    if (!name) return alert('Name required!');
+    await addDoc(collection(db, 'team'), { name, role, createdAt: serverTimestamp() });
+    document.getElementById('team-name').value = '';
+    document.getElementById('team-role').value = '';
+    loadTeam();
+  }
+
+  async function loadTeam() {
+    const list = document.getElementById('team-list');
+    list.innerHTML = '<div class="loading">Loading...</div>';
+    try {
+      const snap = await getDocs(query(collection(db, 'team'), orderBy('createdAt', 'desc')));
+      if (snap.empty) { list.innerHTML = '<div class="empty-state">No team members yet</div>'; return; }
+      list.innerHTML = '';
+      snap.forEach(d => {
+        const data = d.data();
+        list.innerHTML += `<div class="card"><div class="card-info"><div class="card-title">${data.name}</div><div class="card-desc">${data.role||'No role'}</div></div><button class="btn-delete" onclick="delItem('team','${d.id}',loadTeam)">Delete</button></div>`;
+      });
+    } catch(e) { list.innerHTML = '<div class="empty-state">Error loading</div>'; }
+  }
+
+  window.addNews = async function() {
+    const title = document.getElementById('news-title').value.trim();
+    const body = document.getElementById('news-body').value.trim();
+    if (!title) return alert('Title required!');
+    await addDoc(collection(db, 'announcements'), { title, body, createdAt: serverTimestamp() });
+    document.getElementById('news-title').value = '';
+    document.getElementById('news-body').value = '';
+    loadNews();
+  }
+
+  async function loadNews() {
+    const list = document.getElementById('news-list');
+    list.innerHTML = '<div class="loading">Loading...</div>';
+    try {
+      const snap = await getDocs(query(collection(db, 'announcements'), orderBy('createdAt', 'desc')));
+      if (snap.empty) { list.innerHTML = '<div class="empty-state">No announcements yet</div>'; return; }
+      list.innerHTML = '';
+      snap.forEach(d => {
+        const data = d.data();
+        list.innerHTML += `<div class="card"><div class="card-info"><div class="card-title">${data.title}</div><div class="card-desc">${data.body||''}</div></div><button class="btn-delete" onclick="delItem('announcements','${d.id}',loadNews)">Delete</button></div>`;
+      });
+    } catch(e) { list.innerHTML = '<div class="empty-state">Error loading</div>'; }
+  }
+
+  window.delItem = async function(col, id, fn) {
+    if (!confirm('Delete this?')) return;
+    await deleteDoc(doc(db, col, id));
+    fn();
+  }
+
+  document.getElementById('password-input').addEventListener('keydown', e => { if (e.key==='Enter') window.checkLogin(); });
+  document.getElementById('username-input').addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('password-input').focus(); });
+</script>
+</body>
+</html>
